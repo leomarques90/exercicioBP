@@ -10,7 +10,7 @@ Seguindo parte da orientação e na codificação de minha preferência, desenvo
 
 ### Detalhes técnicos da solução
 #### Do fluxo
-1. Processar os comentários e histórias a partir do último ID persistido no banco de dados. Caso não tenha ID algum no banco de dados, são lidas as [500 novas histórias](https://hacker-news.firebaseio.com/v0/newstories.json) pela API da hacker-news.
+1. Processar os comentários e histórias a partir do último ID persistido no banco de dados. Caso não tenha ID algum no banco de dados, são lidas as 50 primeiras histórias a partir do link que retorna as [500 novas histórias](https://hacker-news.firebaseio.com/v0/newstories.json) (para facilitar o teste) pela API da hacker-news.
    - Para cada história, são lidos todos os descendentes, ainda que seja maior que a quantidade de filhos (comentário do comentário).
         ```yaml
         {

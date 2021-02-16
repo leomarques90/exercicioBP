@@ -18,7 +18,7 @@ args={
     'schedule_interval': '@daily',
 }
 
-dag = DAG(dag_id='bp_dag', default_args=args, schedule_interval=None)
+dag = DAG(dag_id='bp_dag', default_args=args)
 
 # ----------------------------------------------------------------------------------------
 # Aqui são definidas as variáveis úteis, como: o termo a ser encontrado; a url base para
@@ -66,15 +66,22 @@ def max_ids(**context):
 # ----------------------------------------------------------------------------------------
 def comments_child(id,data):
     from bs4 import BeautifulSoup
-    response = requests.get('https://news.ycombinator.com/item?id='+str(id))
-    content = BeautifulSoup(response.text, 'lxml')
-    ids = content.find_all(attrs={"class":"athing comtr"})
-    i=0
-    ##Em caso de se ter algum "filho", busca-se todos os comentários abaixo da história.
-    for _ in ids:
-        r = requests.get('https://hacker-news.firebaseio.com/v0/item/'+str(ids[i]['id'])+'.json')
-        data.append(r.json())
-        i += 1
+    try:
+        response = requests.get('https://news.ycombinator.com/item?id='+str(id))
+        content = BeautifulSoup(response.text, 'lxml')
+        ids = content.find_all(attrs={"class":"athing comtr"})
+        i=0
+        ##Em caso de se ter algum "filho", busca-se todos os comentários abaixo da história.
+        for _ in ids:
+            try:
+                r = requests.get('https://hacker-news.firebaseio.com/v0/item/'+str(ids[i]['id'])+'.json')
+                data.append(r.json())
+                i += 1
+                break
+            except:
+                time.sleep(5)
+    except:
+        time.sleep(5)    
 
 # ----------------------------------------------------------------------------------------
 # Função que define a estratégia de leitura a partir dos máximos ids recuperados na função
@@ -94,7 +101,7 @@ def read_data(**context):
         r = requests.get(urlInicial)
         list = r.json()
         ##Para cada ID da lista das top 500 histórias, é acrescida a uma variável o json obtido.
-        for i in list:
+        for i in list[0:50]:
             r = requests.get(baseUrl+'item/'+str(i)+'.json')
             data.append(r.json())
             descendants = "descendants" in r.json()

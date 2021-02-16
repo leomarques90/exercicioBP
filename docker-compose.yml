@@ -8,6 +8,14 @@ services:
       - POSTGRES_DB=airflow
     ports:
       - "5432:5432"
+  db:
+    image: mongo
+    restart: always
+    ports:
+      - 27017:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
 
   webserver:
     image: puckel/docker-airflow:1.10.1
@@ -15,8 +23,8 @@ services:
       context: https://github.com/puckel/docker-airflow.git#1.10.1
       dockerfile: Dockerfile
       args:
-        AIRFLOW_DEPS: gcp_api,s3
-        PYTHON_DEPS: sqlalchemy==1.2.0
+        AIRFLOW_DEPS: gcp_api,s3,pymongo,requests
+        PYTHON_DEPS: sqlalchemy==1.2.0, pymongo==3.11.3, requests==2.7.0
     restart: always
     depends_on:
       - postgres
@@ -24,8 +32,13 @@ services:
       - LOAD_EX=n
       - EXECUTOR=Local
       - FERNET_KEY=jsDPRErfv8Z_eVTnGfF8ywd19j4pyqE3NpdUBA_oRTo=
+
     volumes:
-      - ./examples/intro-example/dags:/usr/local/airflow/dags
+      - ./airflow/dags:/usr/local/airflow/dags
+      - .:/code
+      - ./airflow/requirements.txt:/requirements.txt
+      - ./config/airflow.cfg:/usr/local/airflow/airflow.cfg
+      - ./airflow/variables.json:/usr/local/airflow/variables.json
       # Uncomment to include custom plugins
       # - ./plugins:/usr/local/airflow/plugins
     ports:

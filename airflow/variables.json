@@ -1,0 +1,7 @@
+{
+    "termo": "understand",
+    "email_receiver": "leonardorg15@gmail.com",
+    "database_conn_uri": "mongodb://root:example@db",
+    "database_name": "brasilParalelo",
+    "collection_name": "hackerNewsRaw"
+}

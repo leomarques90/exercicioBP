@@ -8,11 +8,11 @@ from airflow.utils.dates import days_ago
 from airflow.operators.python_operator import PythonOperator
 from airflow.utils.email import send_email
 from airflow.models import Variable
-
+from bs4 import BeautifulSoup
 
 args = {
     "owner": "leonardo",
-    "start_date": airflow.utils.dates.days_ago(0),
+    "start_date": days_ago(1),
     "schedule_interval": "@daily",
 }
 dag = DAG(dag_id="bp_dag", default_args=args)
@@ -27,8 +27,6 @@ baseUrl = "https://hacker-news.firebaseio.com/v0/"
 data = []
 data_termo = []
 parent = []
-
-
 
 
 def max_ids(**context):
@@ -48,8 +46,6 @@ def max_ids(**context):
 
 
 def comments_child(id, data):
-    from bs4 import BeautifulSoup
-
     try:
         response = requests.get("https://news.ycombinator.com/item?id=" + str(id))
         content = BeautifulSoup(response.text, "lxml")
@@ -58,12 +54,12 @@ def comments_child(id, data):
         ##Em caso de se ter algum "filho", busca-se todos os comentários abaixo da história.
         for _ in ids:
             try:
-                r = requests.get(
+                response = requests.get(
                     "https://hacker-news.firebaseio.com/v0/item/"
                     + str(ids[i]["id"])
                     + ".json"
                 )
-                data.append(r.json())
+                data.append(response.json())
                 i += 1
                 break
             except:
@@ -75,38 +71,48 @@ def comments_child(id, data):
 def read_data(**context):
     maxId = context["ti"].xcom_pull(key="maxId")
     maxIdDB = context["ti"].xcom_pull(key="maxIdDB")
+
     if maxIdDB == 0:
         urlInicial = baseUrl + "newstories.json"
-        r = requests.get(urlInicial)
-        list = r.json()
-        for i in list[0:50]:
-            r = requests.get(baseUrl + "item/" + str(i) + ".json")
-            data.append(r.json())
-            descendants = "descendants" in r.json()
-            if descendants == True and r.json()["descendants"] > 0:
+        response = requests.get(urlInicial)
+        json_response = response.json()
+
+        for i in json_response[0:50]:
+            response = requests.get(baseUrl + "item/" + str(i) + ".json")
+            data.append(json_response)
+            descendants = "descendants" in json_response
+
+            if descendants == True and json_response["descendants"] > 0:
                 comments_child(i, data)
     else:
         for x in range(maxIdDB + 1, maxId + 1):
-            r = requests.get(baseUrl + "item/" + str(x) + ".json")
-            dead = "dead" in r.json()
-            deleted = "deleted" in r.json()
-            if dead == False:
-                if deleted == False:
-                    data.append(r.json())
-                    if r.json()["type"] == "story":
-                        descendants = "descendants" in r.json()
-                        if descendants == True and r.json()["descendants"] > 0:
+            response = requests.get(baseUrl + "item/" + str(x) + ".json")
+            json_response = response.json()
+
+            if json_response:
+                dead = "dead" in json_response
+                deleted = "deleted" in json_response
+                if dead == False and deleted == False:
+                    data.append(json_response)
+
+                    if json_response["type"] == "story":
+                        descendants = "descendants" in json_response
+                        if descendants == True and json_response["descendants"] > 0:
                             comments_child(x, data)
-                    elif r.json()["type"] == "comment":
-                        parent = r.json()["parent"]
-                        kids = "kids" in r.json()
+
+                    elif json_response["type"] == "comment":
+                        parent = json_response["parent"]
+
+                        kids = "kids" in json_response
                         if kids == True:
                             comments_child(x, data)
                         while True:
-                            r = requests.get(baseUrl + "item/" + str(parent) + ".json")
-                            data.append(r.json())
-                            if r.json()["type"] == "comment":
-                                parent = r.json()["parent"]
+                            response = requests.get(
+                                baseUrl + "item/" + str(parent) + ".json"
+                            )
+                            data.append(json_response)
+                            if json_response["type"] == "comment":
+                                parent = json_response["parent"]
                             else:
                                 break
     context["ti"].xcom_push(key="data", value=data)

@@ -1,17 +1,17 @@
 Atividade Brasil Paralelo
 ---
 
-Este código foi gerado para atender aos requisitos enviados pelo Konrad na terça-feira, dia  9 de fevereiro, às 21:57, conforme texto destacado abaixo:
+This code was written to attendee the needs sent in a exercise that I made to enter in my current job. The simulated business needs were:
 
-> O objetivo deste exercício é testar sua habilidade de criar um fluxo de processamento de dados demonstrando boas práticas na arquitetura de sua solução. Para tal, imagine que você está servindo a dois clientes: (1) uma equipe de cientistas de dados que quer trabalhar com todos os comentários feitos no Hacker News; (2) uma equipe de analistas que quer receber alertas toda vez que certos termos forem citados nos comentários. Gere um dataset para o primeiro cliente, e dispare um alarme para o segundo.
+> Tests your abillity to create a data workflow demonstrating good practices in the architecture solution. For accomplish that, imagine that you are serving two clients: (1) a data scientis team who seeks to work with all comments made in the Hacker News; (2) a data analyst team who wants to receive alerts every time that certain terms appear in the comments. Deliver a dataset for the first client, and trigger an alarm for the second.
 
-## Sobre a solução
-Seguindo parte da orientação e na codificação de minha preferência, desenvolvi uma solução que lê os dados do hacker-news através da API oficial fornecida e recomendada por eles, grava os dados no mongoDB na estrutura em que os dados estão formatados na API e envia e-mail caso um termo pré-definido seja encontrado.<br>
+## About the solution
+Following part of the orientation and using my favorite language, I developed a solution that reads data from hacker-news through the official API, recommended by them, save the data in mongoDB in the raw structure e sends e-mail when a term pre-defined is encountered.<br>
 
-### Detalhes técnicos da solução
-#### Do fluxo
-1. Processar os comentários e histórias a partir do último ID persistido no banco de dados. Caso não tenha ID algum no banco de dados, são lidas as 50 primeiras histórias a partir do link que retorna as [500 novas histórias](https://hacker-news.firebaseio.com/v0/newstories.json) (para facilitar o teste) pela API da hacker-news.
-   - Para cada história, são lidos todos os descendentes, ainda que seja maior que a quantidade de filhos (comentário do comentário).
+### Technical details of the solution
+#### About the workflow
+1. Process the stories and comments from the last ID persisted in the database. If the database don't have data, the first 50 stories are read from the link that returns [500 new stories](https://hacker-news.firebaseio.com/v0/newstories.json) from the hacker-news API.
+   - For each story, all descendent are read.
         ```yaml
         {
         "by" : "kmcquade",
@@ -25,7 +25,7 @@ Seguindo parte da orientação e na codificação de minha preferência, desenvo
         "url" : "https://github.com/salesforce/endgame"
         }
         ```
-    - Para cada comentário, também são lidos todos os descendentes, ainda que seja maior que a quantidade de filhos (comentário do comentário) e é feito o caminho reverso até se chegar à história que originou aquele comentário (loop pelo parent). Outros comentários na história recuperada não são processados.
+    - For each comment, the descendent are read too, and a reverse path are made until it gets to the story that originates that comment (loop through parent). Another comments in the story recovered are not processed.
         ```yaml
         {
         "by" : "baobabKoodaa",
@@ -37,7 +37,7 @@ Seguindo parte da orientação e na codificação de minha preferência, desenvo
         "type" : "comment"
         }
         ```
-    - Histórias e comentários mortos (dead=true) ou deletados (deleted=true) não são lidos.
+    - Dead or deleted stories and comments are not read.
         ```yaml
         {
         "by" : "mwitiderrick",
@@ -58,13 +58,13 @@ Seguindo parte da orientação e na codificação de minha preferência, desenvo
         "type" : "story"
         }
         ```
-2. Inserir dados no mongoDB resultantes do processamento anterior.
-3. Paralelamente ao item 2, identificar na lista gerada pelo item 1 se há alguma ocorrência do termo parametrizado.
-4. Enviar e-mail com informações relevantes sobre a execução, tal como quantidade de registros encontrados e menção ao termo, além de um arquivo em anexo.
+3. Insrt data into mongoDB resulted by the process described above.
+4. Parallel to item 2, identify on the list generate by the item 1 if there is any occurrence of the parametrized term.
+5. Send e-mail with relevant information about the execution, such as the quantity of encountered rows and mention of the term, and a file in attachment.
 
-#### Parâmetros
-Para cumprir com os requisitos da atividade, foram criados alguns parâmetros de conexão com o mongodb, definição do termo e e-mail que irá receber a mensagem.
-Os parâmetros estão localizados no arquivo "/airflow/variables.json" e precisam ser importados (instruções estão no tópico **Instruções > Usabilidade**)
+#### Parameters
+To accomplish the requirements of the activity, some parameters of connection with mongodb were created, term definition and the e-mail that will receiver the message.
+The parameters are located in the file `/airflow/variables.json` and needs to be imported (instructions are in this topic **Instructions > Usabillity**).
 ```yaml
 {
     "termo": "understand",
@@ -74,40 +74,40 @@ Os parâmetros estão localizados no arquivo "/airflow/variables.json" e precisa
     "collection_name": "hackerNewsRaw"
 }
 ```
-**Vale destacar que precisei efetuar algumas configurações no arquivo de configuração do airflow e, por isso, meu e-mail pessoal está sendo utilizado para viabilizar o envio de e-mail. Peço que me informem quando finalizarem a verificação para que eu possa desativar a senha gerada para apps.**
+In addition to these variables, you should parametrize the (variables of SMTP)[https://airflow.apache.org/docs/apache-airflow/stable/configurations-ref.html#smtp] to make the task `send_mail` work properly:
 
-## Instruções
+## Instructions
 
-Estas instruções farão com que o projeto seja copiado para a máquina local e viabilizarão o teste de execução da solução proposta.
+These instructions will copy the project to the local machine and wil enable the execution of the solution proposed.
 
-- Clonar este repositório
-- Instalar os pré-requisitos
-- Executar o serviço
-- Acessar http://localhost:8080
-- Importar o documento de variáveis
+- Clone this repo;
+- Install requirements;
+- Execute the service;
+- Access http://localhost:8080;
+- Import the document of variables.
 
-### Pré-requisitos
+### Requirements
 
-- Instalar [Docker](https://www.docker.com/)
-- Instalar [Docker Compose](https://docs.docker.com/compose/install/)
+- Install [Docker](https://www.docker.com/)
+- Install [Docker Compose](https://docs.docker.com/compose/install/)
 
-### Usabilidade
+### Usabillity
 
-Executar o serviço dentro do repositório
+Execute the service inside the cloned repo.
 
 ```
 docker-compose up -d
 ```
 
-Acessar http://localhost:8080/
+Go to http://localhost:8080/.
 
-Importar variáveis no Airflow seguindo o caminho:
-Admin > Variables > Escolher arquivo > variables.json > Import Variables
+Import variables in work following the path:
+Admin > Variables > Choose File > variables.json > Import Variables
 ![image info](./imgs/intrucao_1.png)
 
-Ligar e executar a dag "bp_dag" :smile:
+Turn on and execute dag "bp_dag" :smile:
 
-## Créditos
+## Bibliography
 
 - [Git hub airflow docker](https://github.com/tuanavu/airflow-tutorial)
 - [Mongodb docker](https://hub.docker.com/_/mongo)
